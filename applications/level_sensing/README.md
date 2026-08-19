@@ -18,7 +18,7 @@ your host supports:
 
 | Firmware ([Releases](../../../../releases)) | Data UART baud rate | Use case |
 |---|---|---|
-| `uRAD_LevelSensing_IWR6843AoP.bin` | 921600 (standard) | Default; used by the Python client |
+| `uRAD_LevelSensing_IWR6843AoP_921600_br.bin` | 921600 (standard) | Default; used by the Python client |
 | `uRAD_LevelSensing_IWR6843AoP_115200_br.bin` | 115200 | Hosts without high-speed UART |
 | `uRAD_LevelSensing_IWR6843AoP_9600_br.bin` | 9600 | Arduino and other slow hosts |
 

@@ -10,7 +10,7 @@ stored in the git history.
 | `3D_people_track_6843_demo.bin` | 3D People Tracking (standard) | Wall mounting; from the TI Radar Toolbox |
 | `overhead_3d_people_track_demo_default.bin` | 3D People Tracking (overhead) | Ceiling mounting; from the TI Radar Toolbox |
 | `vital_signs_tracking_6843AOP_demo.bin` | Vital Signs | Heart and breathing rate; from the TI Radar Toolbox |
-| `uRAD_LevelSensing_IWR6843AoP.bin` | Level sensing | Data UART at 921600 baud (default) |
+| `uRAD_LevelSensing_IWR6843AoP_921600_br.bin` | Level sensing | Data UART at 921600 baud (default) |
 | `uRAD_LevelSensing_IWR6843AoP_115200_br.bin` | Level sensing | Data UART at 115200 baud |
 | `uRAD_LevelSensing_IWR6843AoP_9600_br.bin` | Level sensing | Data UART at 9600 baud (for Arduino/slow hosts) |
 

@@ -26,6 +26,12 @@ pip install git+https://github.com/urad-by-Anteral/urad-mmwave-core.git
 urad-people-tracking --config config_radar.json --data-port COM7 --control-port COM8
 ```
 
+> **Note — one configuration per boot:** application firmwares accept only
+> one configuration per boot. Before running the client again, reset the
+> radar: unplug and replug the USB cable, press the physical reset button,
+> or drive the reset pin on the board connector (on Raspberry Pi setups the
+> client can do this for you via `gpio_reset_pin` in the configuration).
+
 Edit [`config_radar.json`](config_radar.json) (or use the CLI overrides) to
 select your serial ports and the chirp configuration variant. Per frame the
 tool reports tracked targets and detected points, and writes

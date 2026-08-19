@@ -29,6 +29,9 @@ urad-vital-signs --config config_radar.json --data-port COM7 --control-port COM8
 > drive the reset pin on the board connector (on Raspberry Pi setups the
 > client can do this for you via `gpio_reset_pin` in the configuration).
 
+Add `--gui` (requires `pip install urad-mmwave[gui]`) for a live view of
+the heart and breathing waveforms with the patient status and rates.
+
 Edit [`config_radar.json`](config_radar.json) (or use the CLI overrides) to
 select your serial ports and chirp configuration. Per frame the tool
 reports the patient status (measuring / present / holding breath), the

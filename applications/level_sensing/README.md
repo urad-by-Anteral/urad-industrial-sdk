@@ -35,9 +35,12 @@ pip install git+https://github.com/urad-by-Anteral/urad-mmwave-core.git
 urad-level-sensing --model IWR --control-port COM8 --data-port COM7 --max-distance 12 --range 0 10 -n 5
 ```
 
-For Raspberry Pi single-UART setups add `--gpio-reset-pin 6` and omit
-`--data-port`. Run `urad-level-sensing --help` for all options, or use the
-API directly (`urad_mmwave.apps.level_sensing.measure`).
+Add `--gui` (requires `pip install urad-mmwave[gui]`) for a live plot of
+the three ranges over time. For Raspberry Pi single-UART setups add
+`--gpio-reset-pin 6` and omit `--data-port`. Run
+`urad-level-sensing --help` for all options, or use the API directly
+(`urad_mmwave.apps.level_sensing.measure`, or `.stream` for continuous
+readings).
 
 ## Other platforms
 

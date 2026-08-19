@@ -36,7 +36,9 @@ urad-level-sensing --model IWR --control-port COM8 --data-port COM7 --max-distan
 ```
 
 Add `--gui` (requires `pip install urad-mmwave[gui]`) for a live plot of
-the three ranges over time. For Raspberry Pi single-UART setups add
+the three ranges over time, or `--spectrum` for the full FFT range
+profile computed from the raw ADC samples with the detected peaks and
+their amplitudes marked. For Raspberry Pi single-UART setups add
 `--gpio-reset-pin 6` and omit `--data-port`. Run
 `urad-level-sensing --help` for all options, or use the API directly
 (`urad_mmwave.apps.level_sensing.measure`, or `.stream` for continuous

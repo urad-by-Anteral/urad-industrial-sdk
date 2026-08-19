@@ -7,11 +7,11 @@ radar, using the dedicated Level Sensing firmware
 ## Python
 
 The Python client is part of the shared
-[urad-mmwave](https://github.com/<org>/urad-mmwave-core) SDK — no code in
+[urad-mmwave](https://github.com/urad-by-Anteral/urad-mmwave-core) SDK — no code in
 this folder is needed:
 
 ```bash
-pip install git+https://github.com/<org>/urad-mmwave-core.git
+pip install git+https://github.com/urad-by-Anteral/urad-mmwave-core.git
 urad-level-sensing --model IWR --control-port COM8 --data-port COM7 --max-distance 12 --range 0 10 -n 5
 ```
 

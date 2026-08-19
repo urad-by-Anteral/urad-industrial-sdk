@@ -15,10 +15,10 @@ movements.
 ## Usage
 
 The Python client is part of the shared
-[urad-mmwave](https://github.com/<org>/urad-mmwave-core) SDK:
+[urad-mmwave](https://github.com/urad-by-Anteral/urad-mmwave-core) SDK:
 
 ```bash
-pip install git+https://github.com/<org>/urad-mmwave-core.git
+pip install git+https://github.com/urad-by-Anteral/urad-mmwave-core.git
 urad-people-counting --config config_radar.json --data-port COM7 --control-port COM8
 ```
 

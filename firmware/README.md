@@ -6,7 +6,7 @@ stored in the git history.
 
 | Binary | Application | Notes |
 |---|---|---|
-| `out_of_box_6843_aop.bin` | Out-of-box demo | Point cloud streaming; used with [urad-mmwave](https://github.com/<org>/urad-mmwave-core) |
+| `out_of_box_6843_aop.bin` | Out-of-box demo | Point cloud streaming; used with [urad-mmwave](https://github.com/urad-by-Anteral/urad-mmwave-core) |
 | `3D_people_count_68xx_demo.bin` | 3D People Counting (standard) | Wall mounting |
 | `overhead_3d_people_count_demo_default.bin` | 3D People Counting (overhead) | Ceiling mounting |
 | `uRAD_LevelSensing_IWR6843AoP.bin` | Level sensing | Data UART at 921600 baud (default) |

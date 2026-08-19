@@ -43,5 +43,5 @@ the TLV reference (vital signs plus the shared people tracking TLVs).
 ## Documentation
 
 The TI user guide and implementation notes are available in the
-[TI Resource Explorer](https://dev.ti.com/tir/) (Radar Toolbox, Vital
+[TI Resource Explorer](https://dev.ti.com) (Radar Toolbox, Vital
 Signs).

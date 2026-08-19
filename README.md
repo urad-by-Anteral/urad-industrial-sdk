@@ -76,7 +76,7 @@ See [`applications/vital_signs/`](applications/vital_signs).
 The TI documentation previously bundled with this SDK is available from TI:
 the [mmWave SDK](https://www.ti.com/tool/MMWAVE-SDK) user guide, the people
 tracking and vital signs guides in the
-[TI Resource Explorer](https://dev.ti.com/tir/) (Radar Toolbox), and
+[TI Resource Explorer](https://dev.ti.com) (Radar Toolbox), and
 the [IWR6843AoP product page](https://www.ti.com/product/IWR6843AOP).
 
 ## License

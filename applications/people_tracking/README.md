@@ -47,5 +47,5 @@ point cloud, presence).
 
 [`docs/`](docs) contains the uRAD user guides for both variants (EN). The TI
 implementation and tuning guides are available in the
-[TI Resource Explorer](https://dev.ti.com/tir/) (Radar Toolbox, People
+[TI Resource Explorer](https://dev.ti.com) (Radar Toolbox, People
 Tracking).

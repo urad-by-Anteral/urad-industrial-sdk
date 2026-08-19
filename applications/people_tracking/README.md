@@ -26,6 +26,11 @@ pip install git+https://github.com/urad-by-Anteral/urad-mmwave-core.git
 urad-people-tracking --config config_radar.json --data-port COM7 --control-port COM8
 ```
 
+Add `--gui` (requires `pip install urad-mmwave[gui]`) for a live top view
+with the point cloud, the tracked people as numbered circles and the
+tracker zones (`boundaryBox`, `staticBoundaryBox`, `presenceBoundaryBox`)
+drawn from the chirp configuration.
+
 > **Note — one configuration per boot:** application firmwares accept only
 > one configuration per boot. Before running the client again, reset the
 > radar: unplug and replug the USB cable, press the physical reset button,

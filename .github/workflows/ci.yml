@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-level-sensing-cpp:
+    name: level sensing C++ (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (g++)
+        if: runner.os == 'Linux'
+        run: g++ -std=c++17 -O2 -Wall -Wextra -o level_sensing applications/level_sensing/cpp/level_sensing_UART.cpp
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Build (MSVC)
+        if: runner.os == 'Windows'
+        run: cl /std:c++17 /O2 /EHsc /W4 applications/level_sensing/cpp/level_sensing_UART.cpp

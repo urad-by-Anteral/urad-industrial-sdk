@@ -41,10 +41,16 @@ API directly (`urad_mmwave.apps.level_sensing.measure`).
 
 ## Other platforms
 
-- [`cpp/level_sensing_UART.cpp`](cpp/level_sensing_UART.cpp) — C++
-  reference implementation (single UART).
+- [`cpp/level_sensing_UART.cpp`](cpp/level_sensing_UART.cpp) — portable
+  desktop C++17 reference client (Windows and Linux, no dependencies;
+  dual UART). Build with
+  `g++ -std=c++17 -O2 -o level_sensing level_sensing_UART.cpp` or
+  `cl /std:c++17 /O2 /EHsc level_sensing_UART.cpp`, then run
+  `level_sensing COM5 COM4` (`--baud` must match the firmware variant).
 - [`arduino/uRAD_LevelSensing.ino`](arduino/uRAD_LevelSensing.ino) — Arduino
-  sketch (use the `9600_br` firmware variant).
+  sketch (single UART: configures at 115200, then reopens for data).
+  Set the `RadarDataBaudRate` define to the flashed firmware variant;
+  the default 9600 matches the recommended `9600_br` binary.
 
 ## Documentation
 

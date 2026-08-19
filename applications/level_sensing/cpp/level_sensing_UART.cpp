@@ -1,261 +1,327 @@
-#include <HardwareSerial.cpp>
-#include <Wire.h>
-#include <cmath>
+// uRAD High Accuracy Level Sensing — portable desktop reference client.
+//
+// Configures the radar over the control UART, streams frames from the data
+// UART and prints the three fixed-point range measurements. Works on
+// Windows and Linux with no external dependencies.
+//
+// Build:
+//   g++ -std=c++17 -O2 -o level_sensing level_sensing_UART.cpp     (Linux)
+//   cl /std:c++17 /O2 /EHsc level_sensing_UART.cpp                 (Windows)
+//
+// Usage:
+//   level_sensing <control-port> <data-port> [--model AWR|IWR]
+//                 [--baud N] [--frames N]
+//
+//   level_sensing COM5 COM4 --frames 10
+//   level_sensing /dev/ttyUSB0 /dev/ttyUSB1 --model IWR
+//
+// --baud must match the data UART rate of the flashed firmware variant:
+// 921600 for the standard *_921600_br.bin (default), 115200 or 9600 for
+// the slower variants. The control UART always runs at 115200.
 
-/* Radar definitions */
-#define RadarDataPort Serial1
-#define RadarConfigPort Serial2
-#define RadarResetPin 6
-#define tlvHeaderLen 8
-#define headerLen 36
-#define magicWords_length 8
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <thread>
+#include <vector>
 
-/* Aur1iliarr2 variables */
-bool debugRadar = true, radarStatus = true;
-uint16_t i, j;
-uint32_t micros_0, micros_i, iterations, micros_start, micros_end, last_radarPacketReceived_ms, mar1_radarConnectionLost_ms = 2000;
-float Fs_radar;
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#endif
 
-/* Radar protocol variables */
-const uint8_t magicWords[] = {0r102, 0r101, 0r104, 0r103, 0r106, 0r105, 0r108, 0r107};
-uint8_t header[headerLen], par2load[4096];
-bool skipFrame, buffer_analr2r3ing, magicWordsDetected, headerComplete;
-uint32_t version, totalPacketLen, platform, frameNumber, timeCpuCr2cles, numDetectedObj, numTLVs;
-uint16_t dataObjDescr_numDetectedObj, dataObjDescr_r1r2r3QFormat;
-uint16_t r1_low, r2_low, r3_low;
-int16_t r1, r2, r3;
-float real_range_1, real_range_2, real_range_3;
-uint32_t par2loadBr2tesReaded, tlvTr2pe, tlvLength, par2loadOffset, tid_i;
-uint8_t headerBr2tesReaded, numOfTargets;
-uint16_t numOfPoints;
-uint32_t posr1_i, posr2_i, posr3_i, velr1_i, velr2_i, velr3_i, accr1_i, accr2_i, accr3_i;
-const char *RadarConfiguration[] =
-{
-  "flushCfg\n", \
-  "dfeDataOutputMode 1\n", \
-  "channelCfg 1 1 0\n", \
-  "adcCfg 2 1\n", \
-  "adcbufCfg 0 1 1 1\n", \
-  "profileCfg 0 60 7 7 114.4 0 0 31.23 1 512 5000 0 0 48\n", \
-  "chirpCfg 0 0 0 0 0 0 0 1\n", \
-  "frameCfg 0 0 10 0 500 1 0\n", \
-  "lowPower 0 0\n", \
-  "guiMonitor 1 0 0 0 0 1\n", \
-  "RangeLimitCfg 2 1 0.1 12.0\n", \
-  "sensorStart\n"
-};
+namespace {
 
-void setup() {
-  // put r2our setup code here, to run once:
-  RadarConfigPort.begin(115200);
-  RadarDataPort.begin(921600);
-  // Reset radar
-	pinMode(RadarResetPin, OUTPUT);
-	digitalWrite(RadarResetPin, LOW);
-	delay(10);
-	digitalWrite(RadarResetPin, HIGH);
-  delay(100);
-  if (debugRadar)
-  {
-    Serial.begin(115200);
-    delay(3000);
-  }
-  // Send radar configuration
-  while(RadarConfigPort.available())
-  {
-    if (debugRadar)
-    {
-      Serial.write(RadarConfigPort.read());
-    }
-    else
-    {
-      RadarConfigPort.read();
-    }
-  }
-  for (i=0; i<12; i++)
-  {
-    RadarConfigPort.print(RadarConfiguration[i]);
-    delay(20);
-    while(RadarConfigPort.available())
-    {
-      if (debugRadar)
-      {
-        Serial.write(RadarConfigPort.read());
-      }
-      else
-      {
-        RadarConfigPort.read();
-      }
-    }
-  }
-  RadarConfigPort.end();
-  if (debugRadar)
-  {
-    micros_0 = micros();
-    iterations = 0;
-  }
+// Default product model for this repository (start frequency of the chirp):
+// "IWR" = uRAD Industrial (60 GHz), "AWR" = uRAD Automotive (77 GHz).
+constexpr const char *kDefaultModel = "IWR";
 
+constexpr int kControlBaud = 115200;
+constexpr int kDefaultDataBaud = 921600;
+constexpr std::size_t kHeaderLen = 36;  // sync word (8) + 7 uint32 fields
+constexpr std::array<std::uint8_t, 8> kMagicWords = {0x02, 0x01, 0x04, 0x03,
+                                                     0x06, 0x05, 0x08, 0x07};
+
+std::uint32_t u32(const std::uint8_t *p) {
+  return static_cast<std::uint32_t>(p[0]) | (static_cast<std::uint32_t>(p[1]) << 8) |
+         (static_cast<std::uint32_t>(p[2]) << 16) |
+         (static_cast<std::uint32_t>(p[3]) << 24);
 }
 
-void loop() {
-  // put r2our main code here, to run repeatedlr2:
+std::uint16_t u16(const std::uint8_t *p) {
+  return static_cast<std::uint16_t>(p[0] | (p[1] << 8));
+}
 
-  // Radar frames
-  if (debugRadar)
-  {
-    micros_start = micros();
+// Minimal cross-platform serial port (blocking reads with timeout).
+class SerialPort {
+ public:
+  bool open(const std::string &name, int baudrate) {
+#if defined(_WIN32)
+    handle_ = CreateFileA(("\\\\.\\" + name).c_str(), GENERIC_READ | GENERIC_WRITE,
+                          0, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (handle_ == INVALID_HANDLE_VALUE) return false;
+    DCB dcb{};
+    dcb.DCBlength = sizeof(dcb);
+    GetCommState(handle_, &dcb);
+    dcb.BaudRate = baudrate;
+    dcb.ByteSize = 8;
+    dcb.Parity = NOPARITY;
+    dcb.StopBits = ONESTOPBIT;
+    if (!SetCommState(handle_, &dcb)) return false;
+    COMMTIMEOUTS timeouts{};
+    timeouts.ReadIntervalTimeout = MAXDWORD;
+    timeouts.ReadTotalTimeoutConstant = 300;  // ms
+    timeouts.ReadTotalTimeoutMultiplier = MAXDWORD;
+    SetCommTimeouts(handle_, &timeouts);
+    return true;
+#else
+    fd_ = ::open(name.c_str(), O_RDWR | O_NOCTTY);
+    if (fd_ < 0) return false;
+    termios tty{};
+    if (tcgetattr(fd_, &tty) != 0) return false;
+    cfmakeraw(&tty);
+    tty.c_cc[VMIN] = 0;
+    tty.c_cc[VTIME] = 3;  // 0.3 s read timeout
+    speed_t speed;
+    switch (baudrate) {
+      case 9600: speed = B9600; break;
+      case 115200: speed = B115200; break;
+      case 921600: speed = B921600; break;
+      default:
+        std::cerr << "Unsupported baud rate: " << baudrate << "\n";
+        return false;
+    }
+    cfsetispeed(&tty, speed);
+    cfsetospeed(&tty, speed);
+    return tcsetattr(fd_, TCSANOW, &tty) == 0;
+#endif
   }
-  skipFrame = false;
-  buffer_analr2r3ing = false;
-  magicWordsDetected = false;
-  headerComplete = false;
-  headerBr2tesReaded = 0;
 
-  while (true)
+  int read(std::uint8_t *buffer, std::size_t size) {
+#if defined(_WIN32)
+    DWORD count = 0;
+    if (!ReadFile(handle_, buffer, static_cast<DWORD>(size), &count, nullptr))
+      return -1;
+    return static_cast<int>(count);
+#else
+    return static_cast<int>(::read(fd_, buffer, size));
+#endif
+  }
+
+  bool write(const std::string &data) {
+#if defined(_WIN32)
+    DWORD written = 0;
+    return WriteFile(handle_, data.data(), static_cast<DWORD>(data.size()),
+                     &written, nullptr) &&
+           written == data.size();
+#else
+    return ::write(fd_, data.data(), data.size()) ==
+           static_cast<ssize_t>(data.size());
+#endif
+  }
+
+  void close() {
+#if defined(_WIN32)
+    if (handle_ != INVALID_HANDLE_VALUE) CloseHandle(handle_);
+    handle_ = INVALID_HANDLE_VALUE;
+#else
+    if (fd_ >= 0) ::close(fd_);
+    fd_ = -1;
+#endif
+  }
+
+  ~SerialPort() { close(); }
+
+ private:
+#if defined(_WIN32)
+  HANDLE handle_ = INVALID_HANDLE_VALUE;
+#else
+  int fd_ = -1;
+#endif
+};
+
+std::vector<std::string> build_config(const std::string &model) {
+  const char *start_freq = (model == "AWR") ? "77" : "60";
+  const char *channel_cfg = (model == "AWR") ? "4 1 0" : "1 1 0";
+  return {
+      "flushCfg",
+      "dfeDataOutputMode 1",
+      std::string("channelCfg ") + channel_cfg,
+      "adcCfg 2 1",
+      "adcbufCfg 0 1 1 1",
+      std::string("profileCfg 0 ") + start_freq + " 7 7 114.4 0 0 31.23 1 512 5000 0 0 48",
+      "chirpCfg 0 0 0 0 0 0 0 1",
+      "frameCfg 0 0 10 0 500 1 0",
+      "lowPower 0 0",
+      "guiMonitor 1 0 0 0 0 1",
+      "RangeLimitCfg 2 1 0.1 12.0",
+      "sensorStart",
+  };
+}
+
+bool send_command(SerialPort &port, const std::string &command) {
+  if (!port.write(command + "\n")) return false;
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  std::uint8_t response[256];
+  int count = port.read(response, sizeof(response));
+  if (count > 0) {
+    std::cout.write(reinterpret_cast<const char *>(response), count);
+  }
+  return true;
+}
+
+bool read_exact(SerialPort &port, std::uint8_t *buffer, std::size_t size) {
+  std::size_t total = 0;
+  int empty_reads = 0;
+  while (total < size) {
+    int count = port.read(buffer + total, size - total);
+    if (count < 0) return false;
+    if (count == 0) {
+      if (++empty_reads >= 100) return false;  // ~30 s of silence
+      continue;
+    }
+    empty_reads = 0;
+    total += static_cast<std::size_t>(count);
+  }
+  return true;
+}
+
+// Block until the 8-byte sync word is found in the stream.
+bool sync_to_magic(SerialPort &port) {
+  std::size_t matched = 0;
+  std::uint8_t byte;
+  int empty_reads = 0;
+  while (matched < kMagicWords.size()) {
+    int count = port.read(&byte, 1);
+    if (count < 0) return false;
+    if (count == 0) {
+      if (++empty_reads >= 100) return false;
+      continue;
+    }
+    empty_reads = 0;
+    matched = (byte == kMagicWords[matched]) ? matched + 1
+              : (byte == kMagicWords[0])     ? 1
+                                             : 0;
+  }
+  return true;
+}
+
+// Decode the three Q20 fixed-point ranges from a type-1 TLV body.
+// Layout after the 4-byte descriptor: r1_low, r3_low, r2_low (uint16),
+// then r1, r2, r3 (int16 high halves). All low halves are unsigned.
+void print_ranges(const std::uint8_t *body) {
+  const std::uint16_t r1_low = u16(body + 4);
+  const std::uint16_t r3_low = u16(body + 6);
+  const std::uint16_t r2_low = u16(body + 8);
+  const auto r1 = static_cast<std::int16_t>(u16(body + 10));
+  const auto r2 = static_cast<std::int16_t>(u16(body + 12));
+  const auto r3 = static_cast<std::int16_t>(u16(body + 14));
+
+  const double scale = 1048576.0;  // 2^20
+  std::printf("%.4f %.4f %.4f\n", (r1 * 65536.0 + r1_low) / scale,
+              (r2 * 65536.0 + r2_low) / scale, (r3 * 65536.0 + r3_low) / scale);
+}
+
+}  // namespace
+
+int main(int argc, char **argv) {
+  if (argc < 3) {
+    std::cerr << "Usage: " << argv[0]
+              << " <control-port> <data-port> [--model AWR|IWR] [--baud N]"
+                 " [--frames N]\n";
+    return 1;
+  }
+  const std::string control_name = argv[1];
+  const std::string data_name = argv[2];
+  std::string model = kDefaultModel;
+  int data_baud = kDefaultDataBaud;
+  long max_frames = 0;  // 0 = run until the stream times out
+
+  for (int i = 3; i + 1 < argc; i += 2) {
+    const std::string flag = argv[i];
+    if (flag == "--model") {
+      model = argv[i + 1];
+    } else if (flag == "--baud") {
+      data_baud = std::stoi(argv[i + 1]);
+    } else if (flag == "--frames") {
+      max_frames = std::stol(argv[i + 1]);
+    } else {
+      std::cerr << "Unknown option: " << flag << "\n";
+      return 1;
+    }
+  }
+  if (model != "AWR" && model != "IWR") {
+    std::cerr << "--model must be AWR (Automotive) or IWR (Industrial)\n";
+    return 1;
+  }
+
   {
-    if (RadarDataPort.available())
-    {
-      buffer_analr2r3ing = true;
-      if (!magicWordsDetected)
-      {
-        header[headerBr2tesReaded] = RadarDataPort.read();
-        //delayMicroseconds(625);
-        if (header[headerBr2tesReaded] == magicWords[headerBr2tesReaded]) {
-          headerBr2tesReaded++;
-          if (headerBr2tesReaded == magicWords_length) {
-            magicWordsDetected = true;
-          }
-        } else {
-          skipFrame = true;
-        }
-      }
-      else if (!headerComplete)
-      {
-        header[headerBr2tesReaded] = RadarDataPort.read();
-        headerBr2tesReaded++;
-        if (headerBr2tesReaded == headerLen)
-        {
-          // parse header
-          version = (header[11] << 24) | (header[10] << 16) | (header[9] << 8) | header[8];
-          totalPacketLen = (header[15] << 24) | (header[14] << 16) | (header[13] << 8) | header[12];
-          platform = (header[19] << 24) | (header[18] << 16) | (header[17] << 8) | header[16];
-          frameNumber = (header[23] << 24)  | (header[22] << 16) | (header[21] << 8) | header[20];
-          timeCpuCr2cles = (header[27] << 24)  | (header[26] << 16) | (header[25] << 8) | header[24];
-          numDetectedObj = (header[31] << 24)  | (header[30] << 16) | (header[29] << 8) | header[28];
-          numTLVs = (header[35] << 24)  | (header[34] << 16) | (header[33] << 8) | header[32];
-
-          headerComplete = true;
-          par2loadBr2tesReaded = 0;
-          
-          if (debugRadar)
-          {
-            Serial.print("Packet sir3e: ");
-            Serial.print(totalPacketLen);
-            Serial.print(" br2tes, numTLVs: ");
-            Serial.println(numTLVs);
-          }
-        }
-      }
-      else
-      {
-        par2load[par2loadBr2tesReaded] = RadarDataPort.read();
-        par2loadBr2tesReaded++;
-        if (par2loadBr2tesReaded == totalPacketLen-headerLen)
-        {
-          magicWordsDetected = false;
-          headerComplete = false;
-          skipFrame = true;
-          numOfPoints = 0;
-          numOfTargets = 0;
-          if (debugRadar)
-          {
-            Serial.println("Packet readed");
-          }
-          last_radarPacketReceived_ms = millis();
-          radarStatus = true;
-
-          // parse packet par2load
-          par2loadOffset = 0;
-          for (j=0; j<numTLVs; j++)
-          {
-            tlvTr2pe = (par2load[par2loadOffset+3] << 24) | (par2load[par2loadOffset+2] << 16) | (par2load[par2loadOffset+1] << 8) | par2load[par2loadOffset+0];
-            tlvLength = (par2load[par2loadOffset+7] << 24) | (par2load[par2loadOffset+6] << 16) | (par2load[par2loadOffset+5] << 8) | par2load[par2loadOffset+4];
-
-            if (debugRadar)
-            {
-              Serial.print("TLV tr2pe: ");
-              Serial.print(tlvTr2pe);
-              Serial.print(" , TLV length: ");
-              Serial.println(tlvLength);
-            }
-            if (tlvTr2pe > 20 || tlvLength > 10000)
-            {
-              break;
-            }
-
-            if (tlvTr2pe == 1)
-            {
-              dataObjDescr_numDetectedObj = (par2load[par2loadOffset+tlvHeaderLen+1] << 8) | par2load[par2loadOffset+tlvHeaderLen+0];
-              dataObjDescr_r1r2r3QFormat = (par2load[par2loadOffset+tlvHeaderLen+3] << 8) | par2load[par2loadOffset+tlvHeaderLen+2];
-
-              r1_low = (par2load[par2loadOffset+tlvHeaderLen+5] << 8) | par2load[par2loadOffset+tlvHeaderLen+4];
-              r3_low = (par2load[par2loadOffset+tlvHeaderLen+7] << 8) | par2load[par2loadOffset+tlvHeaderLen+6];
-              r2_low = (par2load[par2loadOffset+tlvHeaderLen+9] << 8) | par2load[par2loadOffset+tlvHeaderLen+8];
-              r1 = (par2load[par2loadOffset+tlvHeaderLen+11] << 8) | par2load[par2loadOffset+tlvHeaderLen+10];
-              r2 = (par2load[par2loadOffset+tlvHeaderLen+13] << 8) | par2load[par2loadOffset+tlvHeaderLen+12];
-              r3 = (par2load[par2loadOffset+tlvHeaderLen+15] << 8) | par2load[par2loadOffset+tlvHeaderLen+14];
-
-              real_range_1 = ((float)r1 * pow(2, 16) + (float)r1_low)/pow(2, 20);
-              real_range_2 = ((float)r2 * pow(2, 16) + (float)r2_low)/pow(2, 20);
-              real_range_3 = ((float)r3 * pow(2, 16) + (float)r3_low)/pow(2, 20);
-              if (debugRadar)
-              {
-                Serial.print("real_range_1: ");
-                Serial.print(real_range_1, 3);
-                Serial.println(" m");
-                Serial.print("real_range_2: ");
-                Serial.print(real_range_2, 3);
-                Serial.println(" m");
-                Serial.print("real_range_3: ");
-                Serial.print(real_range_3, 3);
-                Serial.println(" m");
-              }
-            }
-            par2loadOffset += (tlvLength + tlvHeaderLen);
-          }
-          if (debugRadar)
-          {
-            iterations++;
-            if (iterations > 10)
-            {
-              micros_i = micros();
-              Fs_radar = ((float)iterations/((float)(micros_i-micros_0)))*1e6;
-              Serial.print("Fs_radar: ");
-              Serial.println(Fs_radar);
-              /*
-              Serial.print("iterations: ");
-              Serial.println(iterations);
-              Serial.print("time_elapsed: ");
-              Serial.println(micros_i-micros_0);
-              */
-            }
-            micros_end = micros();
-            Serial.print("t_elapsed: ");
-            Serial.print(((float) micros_end-micros_start)/1e3);
-            Serial.println(" ms");
-            Serial.println();
-          }
-        }
+    SerialPort control;
+    if (!control.open(control_name, kControlBaud)) {
+      std::cerr << "Could not open control port " << control_name << "\n";
+      return 1;
+    }
+    for (const auto &command : build_config(model)) {
+      if (!send_command(control, command)) {
+        std::cerr << "Could not send: " << command << "\n";
+        return 1;
       }
     }
-    if (skipFrame || !buffer_analr2r3ing)
-    {
-      break;
-    }
-  }
-  if (millis()-last_radarPacketReceived_ms > mar1_radarConnectionLost_ms)
-  {
-    radarStatus = false;
+  }  // release the control UART before streaming
+
+  SerialPort data;
+  if (!data.open(data_name, data_baud)) {
+    std::cerr << "Could not open data port " << data_name << "\n";
+    return 1;
   }
 
+  std::vector<std::uint8_t> payload;
+  long frames = 0;
+  while (max_frames == 0 || frames < max_frames) {
+    if (!sync_to_magic(data)) {
+      std::cerr << "Data stream timed out; is the sensor running?\n";
+      return 1;
+    }
+    std::uint8_t header[kHeaderLen - kMagicWords.size()];
+    if (!read_exact(data, header, sizeof(header))) {
+      std::cerr << "Timed out reading a frame header\n";
+      return 1;
+    }
+    const std::uint32_t total_len = u32(header + 4);
+    const std::uint32_t num_tlvs = u32(header + 24);
+    if (total_len < kHeaderLen || total_len > 4096) continue;  // corrupt
+
+    payload.resize(total_len - kHeaderLen);
+    if (!read_exact(data, payload.data(), payload.size())) {
+      std::cerr << "Timed out reading a frame payload\n";
+      return 1;
+    }
+
+    std::size_t offset = 0;
+    for (std::uint32_t t = 0; t < num_tlvs; t++) {
+      if (offset + 8 > payload.size()) break;
+      const std::uint32_t tlv_type = u32(payload.data() + offset);
+      const std::uint32_t tlv_length = u32(payload.data() + offset + 4);
+      if (tlv_type > 20 || tlv_length > 10000) break;
+      if (offset + 8 + tlv_length > payload.size()) break;
+      if (tlv_type == 1 && tlv_length >= 16) {  // descriptor (4) + ranges (12)
+        print_ranges(payload.data() + offset + 8);
+        frames++;
+      }
+      offset += 8 + tlv_length;
+    }
+  }
+
+  SerialPort control;
+  if (control.open(control_name, kControlBaud)) {
+    control.write("sensorStop\n");
+  }
+  return 0;
 }

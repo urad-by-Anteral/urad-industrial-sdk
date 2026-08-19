@@ -1,5 +1,10 @@
 /* Radar definitions */
 #define RadarResetPin 6
+/* Data UART baud rate of the flashed firmware variant: 9600 for
+   uRAD_LevelSensing_*_9600_br.bin (recommended on Arduino), 115200 for
+   *_115200_br.bin, 921600 for the standard *_921600_br.bin (needs a
+   board whose UART supports it reliably). */
+#define RadarDataBaudRate 9600
 #define tlvHeaderLen 8
 #define headerLen 36
 #define magicWords_length 8
@@ -16,8 +21,12 @@ uint8_t header[headerLen], payload[4096];
 bool skipFrame, buffer_analyzing, magicWordsDetected, headerComplete;
 uint32_t version, totalPacketLen, platform, frameNumber, timeCpuCycles, numDetectedObj, numTLVs;
 uint16_t dataObjDescr_numDetectedObj, dataObjDescr_xyzQFormat;
-uint16_t rangeIdx, peakVal;
-int16_t dopplerIdx, x, y, z;
+/* Low halves of the three fixed-point ranges (always unsigned) and their
+   high halves. The legacy sketch reused the out-of-box point struct names
+   (rangeIdx/dopplerIdx/peakVal) and decoded r3_low as signed, reading
+   range 3 62.5 mm short whenever its low word was >= 0x8000. */
+uint16_t r1_low, r2_low, r3_low;
+int16_t r1, r2, r3;
 float range_meters_1, range_meters_2, range_meters_3, range_inches_1, range_inches_2, range_inches_3, factor_meterToInches = 0.0254;
 uint32_t payloadBytesReaded, tlvType, tlvLength, payloadOffset, tid_i;
 uint8_t headerBytesReaded, numOfTargets;
@@ -61,7 +70,7 @@ void setup() {
     micros_0 = micros();
     iterations = 0;
   }
-  Serial1.begin(921600);
+  Serial1.begin(RadarDataBaudRate);
 }
 
 void loop() {
@@ -164,16 +173,16 @@ void loop() {
               dataObjDescr_numDetectedObj = (payload[payloadOffset+tlvHeaderLen+1] << 8) | payload[payloadOffset+tlvHeaderLen+0];
               dataObjDescr_xyzQFormat = (payload[payloadOffset+tlvHeaderLen+3] << 8) | payload[payloadOffset+tlvHeaderLen+2];
 
-              rangeIdx = (payload[payloadOffset+tlvHeaderLen+5] << 8) | payload[payloadOffset+tlvHeaderLen+4];
-              dopplerIdx = (payload[payloadOffset+tlvHeaderLen+7] << 8) | payload[payloadOffset+tlvHeaderLen+6];
-              peakVal = (payload[payloadOffset+tlvHeaderLen+9] << 8) | payload[payloadOffset+tlvHeaderLen+8];
-              x = (payload[payloadOffset+tlvHeaderLen+11] << 8) | payload[payloadOffset+tlvHeaderLen+10];
-              y = (payload[payloadOffset+tlvHeaderLen+13] << 8) | payload[payloadOffset+tlvHeaderLen+12];
-              z = (payload[payloadOffset+tlvHeaderLen+15] << 8) | payload[payloadOffset+tlvHeaderLen+14];
+              r1_low = (payload[payloadOffset+tlvHeaderLen+5] << 8) | payload[payloadOffset+tlvHeaderLen+4];
+              r3_low = (payload[payloadOffset+tlvHeaderLen+7] << 8) | payload[payloadOffset+tlvHeaderLen+6];
+              r2_low = (payload[payloadOffset+tlvHeaderLen+9] << 8) | payload[payloadOffset+tlvHeaderLen+8];
+              r1 = (payload[payloadOffset+tlvHeaderLen+11] << 8) | payload[payloadOffset+tlvHeaderLen+10];
+              r2 = (payload[payloadOffset+tlvHeaderLen+13] << 8) | payload[payloadOffset+tlvHeaderLen+12];
+              r3 = (payload[payloadOffset+tlvHeaderLen+15] << 8) | payload[payloadOffset+tlvHeaderLen+14];
 
-              range_meters_1 = ((float)x * pow(2, 16) + (float)rangeIdx)/pow(2, 20);
-              range_meters_2 = ((float)y * pow(2, 16) + (float)peakVal)/pow(2, 20);
-              range_meters_3 = ((float)z * pow(2, 16) + (float)dopplerIdx)/pow(2, 20);
+              range_meters_1 = ((float)r1 * 65536.0 + (float)r1_low)/1048576.0;
+              range_meters_2 = ((float)r2 * 65536.0 + (float)r2_low)/1048576.0;
+              range_meters_3 = ((float)r3 * 65536.0 + (float)r3_low)/1048576.0;
 
               range_inches_1 = range_meters_1/factor_meterToInches;
               range_inches_2 = range_meters_2/factor_meterToInches;

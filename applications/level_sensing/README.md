@@ -4,6 +4,26 @@ Millimeter-accuracy distance measurement (12–150 m) for the uRAD Industrial
 radar, using the dedicated Level Sensing firmware
 (`uRAD_LevelSensing_IWR6843AoP*.bin`, see [Releases](../../../../releases)).
 
+## Firmware variants
+
+Unlike the other applications, these binaries are **built by Anteral** from
+the TI High Accuracy Level Sensing demo: TI's original firmware reported a
+raw distance that their visualizer corrected with a multiplication factor
+in software; the uRAD firmware applies that correction on the device, so
+the distances reported over UART are real distances and no factor must be
+applied by the client.
+
+The three variants differ only in the data UART baud rate — pick the one
+your host supports:
+
+| Firmware ([Releases](../../../../releases)) | Data UART baud rate | Use case |
+|---|---|---|
+| `uRAD_LevelSensing_IWR6843AoP.bin` | 921600 (standard) | Default; used by the Python client |
+| `uRAD_LevelSensing_IWR6843AoP_115200_br.bin` | 115200 | Hosts without high-speed UART |
+| `uRAD_LevelSensing_IWR6843AoP_9600_br.bin` | 9600 | Arduino and other slow hosts |
+
+The control UART is always 115200 baud.
+
 ## Python
 
 The Python client is part of the shared

@@ -24,4 +24,9 @@ stored in the git history.
 
 The firmware images are built from the Texas Instruments mmWave SDK and are
 redistributed for use with uRAD hardware, subject to the applicable TI
-license terms.
+license terms. The Level Sensing binaries are built by Anteral from the TI
+High Accuracy Level Sensing demo, with the distance correction applied on
+the device (see
+[applications/level_sensing](../applications/level_sensing/README.md)); the
+three variants differ only in the data UART baud rate (921600 standard,
+115200 and 9600).

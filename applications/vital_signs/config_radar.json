@@ -9,5 +9,5 @@
         "baudrate": 921600,
         "timeout": 0.3
     },
-    "chirp_config_path": "./chirp_config/standard/chirp_config.cfg"
+    "chirp_config_path": "./chirp_config/vital_signs_AOP_2m.cfg"
 }

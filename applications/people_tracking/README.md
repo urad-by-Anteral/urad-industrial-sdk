@@ -1,16 +1,20 @@
-# 3D People Counting
+# 3D People Tracking
 
 People detection and tracking for the uRAD Industrial, using the TI 3D
-People Counting firmware. Two mounting variants share this application —
-only the firmware binary and chirp configuration differ:
+People Tracking firmware (formerly named "People Counting"; renamed by TI
+in the Radar Toolbox). Two mounting variants share this application — only
+the firmware binary and chirp configuration differ:
 
 | Variant | Firmware ([Releases](../../../../releases)) | Chirp configuration |
 |---|---|---|
-| Standard (wall) | `3D_people_count_68xx_demo.bin` | [`chirp_config/standard/`](chirp_config/standard) |
-| Overhead (ceiling) | `overhead_3d_people_count_demo_default.bin` | [`chirp_config/overhead/`](chirp_config/overhead) |
+| Standard (wall) | `3D_people_track_6843_demo.bin` | [`chirp_config/standard/`](chirp_config/standard) |
+| Overhead (ceiling) | `overhead_3d_people_track_demo_default.bin` | [`chirp_config/overhead/`](chirp_config/overhead) |
 
-Each variant also provides a `chirp_config_fineMotion.cfg` tuned for subtle
-movements.
+The standard variant provides configurations for 6 m and 9 m ranges,
+including a `staticRetention` variant that keeps stationary people tracked
+and a `sensitive` variant for higher detection sensitivity. The overhead
+variant provides 3 m radial configurations (default, low bandwidth and
+static retention).
 
 ## Usage
 
@@ -19,7 +23,7 @@ The Python client is part of the shared
 
 ```bash
 pip install git+https://github.com/urad-by-Anteral/urad-mmwave-core.git
-urad-people-counting --config config_radar.json --data-port COM7 --control-port COM8
+urad-people-tracking --config config_radar.json --data-port COM7 --control-port COM8
 ```
 
 Edit [`config_radar.json`](config_radar.json) (or use the CLI overrides) to
@@ -29,7 +33,7 @@ tool reports tracked targets and detected points, and writes
 to the output directory (`--output-dir`, default `./output`).
 
 For programmatic use, decode packets with
-`urad_mmwave.apps.people_counting.parse_frame` — see the module docstring
+`urad_mmwave.apps.people_tracking.parse_frame` — see the module docstring
 for the TLV reference (target list, target index, target height, compressed
 point cloud, presence).
 
@@ -37,4 +41,5 @@ point cloud, presence).
 
 [`docs/`](docs) contains the uRAD user guides for both variants (EN). The TI
 implementation and tuning guides are available in the
-[TI Resource Explorer](https://dev.ti.com/tir/) (Industrial Toolbox).
+[TI Resource Explorer](https://dev.ti.com/tir/) (Radar Toolbox, People
+Tracking).

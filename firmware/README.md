@@ -7,8 +7,9 @@ stored in the git history.
 | Binary | Application | Notes |
 |---|---|---|
 | `out_of_box_6843_aop.bin` | Out-of-box demo | Point cloud streaming; used with [urad-mmwave](https://github.com/urad-by-Anteral/urad-mmwave-core) |
-| `3D_people_count_68xx_demo.bin` | 3D People Counting (standard) | Wall mounting |
-| `overhead_3d_people_count_demo_default.bin` | 3D People Counting (overhead) | Ceiling mounting |
+| `3D_people_track_6843_demo.bin` | 3D People Tracking (standard) | Wall mounting; from the TI Radar Toolbox |
+| `overhead_3d_people_track_demo_default.bin` | 3D People Tracking (overhead) | Ceiling mounting; from the TI Radar Toolbox |
+| `vital_signs_tracking_6843AOP_demo.bin` | Vital Signs | Heart and breathing rate; from the TI Radar Toolbox |
 | `uRAD_LevelSensing_IWR6843AoP.bin` | Level sensing | Data UART at 921600 baud (default) |
 | `uRAD_LevelSensing_IWR6843AoP_115200_br.bin` | Level sensing | Data UART at 115200 baud |
 | `uRAD_LevelSensing_IWR6843AoP_9600_br.bin` | Level sensing | Data UART at 9600 baud (for Arduino/slow hosts) |

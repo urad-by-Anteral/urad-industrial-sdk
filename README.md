@@ -13,7 +13,7 @@ a 60 GHz mmWave evaluation board based on the Texas Instruments **IWR6843AoP**
 | [`docs/`](docs) | User manual and Raspberry Pi adapter guide (EN/ES) |
 | [`mechanical/`](mechanical) | 3D model of the board (STEP) |
 | [`firmware/`](firmware) | Firmware flashing guide; binaries are in [Releases](../../releases) |
-| [`applications/`](applications) | Product applications (people counting, level sensing) |
+| [`applications/`](applications) | Product applications (people tracking, level sensing, vital signs) |
 
 ## Quick start (out-of-box demo)
 
@@ -38,16 +38,17 @@ a 60 GHz mmWave evaluation board based on the Texas Instruments **IWR6843AoP**
 
 ## Applications
 
-### 3D People Counting (standard and overhead)
+### 3D People Tracking (standard and overhead)
 
-People detection and tracking with dedicated TI firmware. Both mounting
-variants (wall and ceiling) share the same client:
+People detection and tracking with dedicated TI firmware (formerly named
+"People Counting"). Both mounting variants (wall and ceiling) share the
+same client:
 
 ```bash
-urad-people-counting --config applications/people_counting/config_radar.json
+urad-people-tracking --config applications/people_tracking/config_radar.json
 ```
 
-See [`applications/people_counting/`](applications/people_counting).
+See [`applications/people_tracking/`](applications/people_tracking).
 
 ### High Accuracy Level Sensing
 
@@ -59,12 +60,23 @@ urad-level-sensing --model IWR --control-port COM8 --data-port COM7 --max-distan
 
 See [`applications/level_sensing/`](applications/level_sensing).
 
+### Vital Signs
+
+Contactless heart rate and breathing rate measurement with dedicated TI
+firmware:
+
+```bash
+urad-vital-signs --config applications/vital_signs/config_radar.json
+```
+
+See [`applications/vital_signs/`](applications/vital_signs).
+
 ## Texas Instruments resources
 
 The TI documentation previously bundled with this SDK is available from TI:
-the [mmWave SDK](https://www.ti.com/tool/MMWAVE-SDK) user guide, the 3D
-people counting guides in the
-[TI Resource Explorer](https://dev.ti.com/tir/) (Industrial Toolbox), and
+the [mmWave SDK](https://www.ti.com/tool/MMWAVE-SDK) user guide, the people
+tracking and vital signs guides in the
+[TI Resource Explorer](https://dev.ti.com/tir/) (Radar Toolbox), and
 the [IWR6843AoP product page](https://www.ti.com/product/IWR6843AOP).
 
 ## License

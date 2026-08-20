@@ -13,7 +13,7 @@ Instruments (antena en el encapsulado).
 | [`docs/`](docs) | Manual de usuario y guía del adaptador para Raspberry Pi (EN/ES) |
 | [`mechanical/`](mechanical) | Modelo 3D de la placa (STEP) |
 | [`firmware/`](firmware) | Guía de flasheo; los binarios están en [Releases](../../releases) |
-| [`applications/`](applications) | Aplicaciones del producto (people tracking, level sensing, vital signs) |
+| [`applications/`](applications) | Aplicaciones del producto (people tracking, level sensing, vital signs, area scanner, puertas automáticas, detección de obstáculos pequeños, CPD con clasificación) |
 
 ## Inicio rápido (demo out-of-box)
 
@@ -71,6 +71,52 @@ urad-vital-signs --config applications/vital_signs/config_radar.json
 ```
 
 Véase [`applications/vital_signs/`](applications/vital_signs).
+
+### Area Scanner
+
+Seguimiento de personas y objetos con detección de objetos estáticos y
+zonas de seguridad configurables (crítica / aviso), para seguridad
+industrial:
+
+```bash
+urad-area-scanner --config applications/area_scanner/config_radar.json
+```
+
+Véase [`applications/area_scanner/`](applications/area_scanner).
+
+### Puertas y portones automáticos (Automated Doors and Gates)
+
+Disparo de puertas automáticas basado en tracking: zona de aproximación,
+estimación de tiempo hasta la puerta y detección de obstrucciones
+estáticas:
+
+```bash
+urad-automated-doors --config applications/automated_doors/config_radar.json
+```
+
+Véase [`applications/automated_doors/`](applications/automated_doors).
+
+### Detección de obstáculos pequeños (Small Obstacle Detection)
+
+Detección de obstáculos pequeños a ras de suelo para robots móviles, con
+alarmas de ocupación por zonas:
+
+```bash
+urad-small-obstacle --config applications/small_obstacle_detection/config_radar.json
+```
+
+Véase [`applications/small_obstacle_detection/`](applications/small_obstacle_detection).
+
+### CPD con clasificación
+
+Detección de ocupación de cabina por zonas de asiento configurables con
+clasificación adulto/niño (Child Presence Detection):
+
+```bash
+urad-cpd --config applications/cpd_with_classification/config_radar.json
+```
+
+Véase [`applications/cpd_with_classification/`](applications/cpd_with_classification).
 
 ## Recursos de Texas Instruments
 

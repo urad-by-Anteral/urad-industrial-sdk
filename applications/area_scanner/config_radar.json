@@ -9,5 +9,5 @@
         "baudrate": 921600,
         "timeout": 0.3
     },
-    "chirp_config_path": "./chirp_configs/area_scanner_68xx_AOP.cfg"
+    "chirp_config_path": "./chirp_config/area_scanner_68xx_AOP.cfg"
 }

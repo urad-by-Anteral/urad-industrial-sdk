@@ -228,6 +228,14 @@ radius), `OPEN (obstructed)` (both). For integrators the frame object
 exposes `door_open: bool`, `obstructed: bool` and `activated_tids` — see
 the module docstring of `urad_mmwave.apps.automated_doors`.
 
+The two conditions are independent by design and neither masks the other:
+`door_open` answers "should the door open for someone approaching?" and
+`obstructed` answers "is something standing in the doorway?". This client
+does not decide which wins, because the safe answer depends on the
+installation — on a powered gate the obstruction usually has to inhibit
+the movement, while on a sliding door it normally forces the leaf to stay
+open. Read both booleans and implement your own interlock.
+
 Unless `--no-save` is given, five append-only text files are written to
 `--output-dir` (one line per frame — frames with no data for a given file
 write no line; every line ends with the host epoch timestamp in seconds):

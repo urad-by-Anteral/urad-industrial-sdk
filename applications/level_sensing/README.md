@@ -45,6 +45,21 @@ The control UART is always 115200 baud.
 > reconfigured repeatedly without resetting the board — the client stops
 > the sensor (`sensorStop`) when it finishes and a new run simply sends a
 > new configuration.
+>
+> This was verified on hardware (uRAD Industrial, 2026-08-21) for the case
+> that matters most — **switching between the two streaming modes**, which
+> changes both `guiMonitor` (raw I/Q on or off) and `frameCfg` (the frame
+> period): three back-to-back runs with no replug gave 19.9 fps with no
+> TLV 2, then 10.1 fps with TLV 2 present, then 20.1 fps with no TLV 2
+> again, and the measured ranges stayed consistent throughout. Both
+> indicators follow the requested configuration in both directions, so the
+> firmware is genuinely reconfigured and not replaying the previous
+> setup. The same sequence was then repeated with the
+> **live viewers** — `--gui`, then `--spectrum`, then `--gui` again, three
+> separate processes each opening and closing its own serial ports, with no
+> replug in between: every run sent its own `frameCfg`/`guiMonitor` pair,
+> got a clean `Sensor stopped` on window close, and the third run's traces
+> matched the first run's.
 
 ### Flashing
 

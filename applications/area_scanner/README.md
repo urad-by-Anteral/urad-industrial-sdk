@@ -74,9 +74,20 @@ line (bandwidth / TX power) and one CFAR threshold:
 | File | Bandwidth | TX power | Range resolution | Max range | Max radial velocity |
 |---|---|---|---|---|---|
 | `area_scanner_68xx_AOP.cfg` (default) | ~3.45 GHz | +12 dBm | 0.070 m | 14.4 m | 2.45 m/s |
-| `..._full_power_full_bandwidth.cfg` | 3.95 GHz | +12 dBm | 0.047 m | 10.8 m | 2.25 m/s |
-| `..._low_power_full_bandwidth.cfg` | 3.95 GHz | −12 dBm | 0.047 m | 10.8 m | 2.25 m/s |
-| `..._full_power_low_bandwidth.cfg` | 480 MHz | +12 dBm | 0.502 m | 115.7 m | 2.42 m/s |
+| `..._full_power_full_bandwidth.cfg` | 3.95 GHz | +12 dBm | 0.047 m | 9.6 m | 2.25 m/s |
+| `..._low_power_full_bandwidth.cfg` | 3.95 GHz | −12 dBm | 0.047 m | 9.6 m | 2.25 m/s |
+| `..._full_power_low_bandwidth.cfg` | 480 MHz | +12 dBm | 0.335 m | 68.6 m | 2.42 m/s |
+
+> **Maximum range** is `c × digOutSampleRate / (2 × frequency slope)`, listed
+> here with the 0.8 derating TI's sensing estimator applies, consistently
+> across the four configurations.
+>
+> **Range resolution is set by the *valid* bandwidth** — frequency slope ×
+> ADC sampling time (`numAdcSamples` / `digOutSampleRate`) — not by the full
+> ramp bandwidth in the table above, which also covers the settling time
+> before the ADC starts. The four values were confirmed on hardware by
+> measuring the smallest step between distinct reported ranges: 0.070 m,
+> 0.046 m, 0.335 m and 0.046 m respectively.
 
 The `full_power_low_bandwidth` and `low_power_full_bandwidth` variants
 exist to meet regional regulatory limits on bandwidth or transmit power
@@ -84,6 +95,18 @@ exist to meet regional regulatory limits on bandwidth or transmit power
 user guide). Bandwidth = frequency slope (8th `profileCfg` value, MHz/µs)
 × ramp end time (5th value, µs); TX power = 12 dBm − backoff (6th value,
 one hex byte per transmitter).
+
+**Watch out for `low_power_full_bandwidth`**: besides the −12 dBm backoff
+it also ships `clutterRemoval -1 0` (disabled, against `-1 1` in the other
+three) and a lower CFAR threshold (12 instead of 20). On hardware this lets
+antenna coupling through as genuine detections in range bin 0: in a 342-frame
+capture, 958 of 9797 dynamic points (9.8 %) were reported at `range = 0.000`
+with real SNR values (194–237), so they are not padding and the parser is
+right to keep them. The practical consequence is that **any zone whose inner
+edge is 0 m stays permanently triggered with this configuration** — the
+critical zone latches to `CRITICAL` on every frame. Either start the critical
+zone past the first range bin (`--critical-zone 0.1 2`) or re-enable
+`clutterRemoval` in the `.cfg` if your regulatory limits allow it.
 
 ### Parameters you may tune
 
@@ -270,6 +293,13 @@ with RadarSession(config) as session:
 - **Too many false static points** — raise `significantTH` (up to ~0.4)
   or `heatmapDiffTH` (up to ~6.3); make sure the sensor is rigidly mounted
   (vibration invalidates the calibration).
+- **The critical zone is always triggered** — something is detected inside
+  it on every frame. On a bench the sensor mount or enclosure itself shows
+  up at a few centimetres (0.094 m in our measurements), and any detection
+  inside the zone triggers it, static ones included. With the
+  `low_power_full_bandwidth` configuration this is systematic — see the
+  warning in section 3. Raise the inner edge of the zone
+  (`--critical-zone 0.1 2`) or clear the near field.
 - **Moving objects not tracked** — they may be outside the `boundaryBox`
   volume (association code 254 in `TargetsIndex.txt`), or the allocation
   thresholds (`allocationParam`) are too strict for the target size.

@@ -9,5 +9,5 @@
         "baudrate": 921600,
         "timeout": 0.3
     },
-    "chirp_config_path": "./chirp_configs/profile_3d_automated_doors_AOP.cfg"
+    "chirp_config_path": "./chirp_config/profile_3d_automated_doors_AOP.cfg"
 }

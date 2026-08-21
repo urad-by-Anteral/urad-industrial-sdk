@@ -9,5 +9,5 @@
         "baudrate": 921600,
         "timeout": 0.3
     },
-    "chirp_config_path": "./chirp_configs/AOP_3d_Tracking_Small_Obstacle_Indoor.cfg"
+    "chirp_config_path": "./chirp_config/AOP_3d_Tracking_Small_Obstacle_Indoor.cfg"
 }

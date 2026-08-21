@@ -9,5 +9,5 @@
         "baudrate": 921600,
         "timeout": 0.3
     },
-    "chirp_config_path": "./chirp_configs/vod_6843_aop_overhead_2row_classification.cfg"
+    "chirp_config_path": "./chirp_config/vod_6843_aop_overhead_2row_classification.cfg"
 }

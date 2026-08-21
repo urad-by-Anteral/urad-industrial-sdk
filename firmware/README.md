@@ -13,6 +13,10 @@ stored in the git history.
 | `uRAD_LevelSensing_IWR6843AoP_921600_br.bin` | Level sensing | Data UART at 921600 baud (default) |
 | `uRAD_LevelSensing_IWR6843AoP_115200_br.bin` | Level sensing | Data UART at 115200 baud |
 | `uRAD_LevelSensing_IWR6843AoP_9600_br.bin` | Level sensing | Data UART at 9600 baud (for Arduino/slow hosts) |
+| `area_scanner_68xx_demo_aop.bin` | Area Scanner | Moving object tracking plus newly added static objects; from the TI Radar Toolbox |
+| `automated_doors_68xx_demo_aop.bin` | Automated Doors and Gates | Door trigger for approaching people; from the TI Radar Toolbox |
+| `small_obstacle_detection_6843.bin` | Small Obstacle Detection | Low obstacles for mobile robots, with zone alarms; from the TI Radar Toolbox |
+| `occupancy_detection_3d_68xx.bin` | CPD with Classification | In-cabin occupancy and child presence with adult/child classification; from the TI Radar Toolbox. Requires **xWR6843 ES2.0** |
 
 ## Flashing
 

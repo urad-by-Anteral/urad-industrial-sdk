@@ -13,7 +13,7 @@ a 60 GHz mmWave evaluation board based on the Texas Instruments **IWR6843AoP**
 | [`docs/`](docs) | User manual and Raspberry Pi adapter guide (EN/ES) |
 | [`mechanical/`](mechanical) | 3D model of the board (STEP) |
 | [`firmware/`](firmware) | Firmware flashing guide; binaries are in [Releases](../../releases) |
-| [`applications/`](applications) | Product applications (people tracking, level sensing, vital signs) |
+| [`applications/`](applications) | Product applications (people tracking, level sensing, vital signs, area scanner, automated doors, small obstacle detection, CPD with classification) |
 
 ## Quick start (out-of-box demo)
 
@@ -70,6 +70,50 @@ urad-vital-signs --config applications/vital_signs/config_radar.json
 ```
 
 See [`applications/vital_signs/`](applications/vital_signs).
+
+### Area Scanner
+
+People and object tracking with static object detection and configurable
+safety zones (critical / warning), for industrial safety:
+
+```bash
+urad-area-scanner --config applications/area_scanner/config_radar.json
+```
+
+See [`applications/area_scanner/`](applications/area_scanner).
+
+### Automated Doors and Gates
+
+Track-based trigger for automated doors: approach zone, time-to-door
+estimate and static obstruction detection:
+
+```bash
+urad-automated-doors --config applications/automated_doors/config_radar.json
+```
+
+See [`applications/automated_doors/`](applications/automated_doors).
+
+### Small Obstacle Detection
+
+Detection of small, low-lying obstacles for mobile robots, with zone
+occupancy alarms:
+
+```bash
+urad-small-obstacle --config applications/small_obstacle_detection/config_radar.json
+```
+
+See [`applications/small_obstacle_detection/`](applications/small_obstacle_detection).
+
+### CPD with Classification
+
+In-cabin occupancy detection over configurable seat zones with adult/child
+classification (Child Presence Detection):
+
+```bash
+urad-cpd --config applications/cpd_with_classification/config_radar.json
+```
+
+See [`applications/cpd_with_classification/`](applications/cpd_with_classification).
 
 ## Texas Instruments resources
 

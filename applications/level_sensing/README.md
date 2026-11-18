@@ -188,9 +188,7 @@ TLVs (7 × uint32) — then the TLVs:
 
 ## Documentation
 
-[`docs/`](docs) contains the user manual (EN/ES), application notes (EN/ES)
-and the performance report (EN). See also:
-
+- [uRAD level sensing performance report](docs/performance-en.pdf) (EN, PDF).
 - [TI Radar Toolbox](https://www.ti.com/tool/RADAR-TOOLBOX) (browsable in
   the [TI Resource Explorer](https://dev.ti.com)) → *Industrial and
   Personal Electronics → Level Sensing → High Accuracy* user guide
